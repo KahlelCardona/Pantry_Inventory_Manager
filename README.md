@@ -7,6 +7,7 @@ By creating a way to track groceries bought and helping users come up with recip
 project’s Concept of Operations
 
 Project: Pantry/fridge food manager + recipe generator
+
 Prepared by: Michael Haley, Kahlel Cardona, Mateusz Doda, Richard Alonso Garcia, Loleyi Oluwatomisin
 
 Major Functions: barcode scanning, grocery management, recipe generator, and nutrition tracker
