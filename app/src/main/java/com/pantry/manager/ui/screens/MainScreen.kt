@@ -24,7 +24,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
 
 @Composable
 fun MainScreen() {
-    var currentScreen by remember { mutableStateOf<Screen>(Screen.Pantry) }
+    var currentScreen by remember { mutableStateOf<Screen>(Screen.Scanner) }
 
     val bottomNavItems = listOf(
         Screen.Pantry,
