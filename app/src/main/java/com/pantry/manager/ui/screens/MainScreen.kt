@@ -13,6 +13,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.pantry.manager.data.model.Ingredient
+import com.pantry.manager.data.model.StorageLocation
+import com.pantry.manager.ui.viewmodel.HomeScreenViewModel
+
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     data object Pantry : Screen("pantry", "Pantry", Icons.Default.Home)
     data object Generator : Screen("generator", "AI Recipes", Icons.Default.AutoAwesome)
@@ -23,7 +28,9 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
 }
 
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    viewModel: HomeScreenViewModel = viewModel()
+) {
     var currentScreen by remember { mutableStateOf<Screen>(Screen.Scanner) }
 
     val bottomNavItems = listOf(
@@ -51,9 +58,24 @@ fun MainScreen() {
     ) { innerPadding ->
         Surface(modifier = Modifier.padding(innerPadding)) {
             when (currentScreen) {
-                Screen.Pantry -> HomeScreen(onNavigateToScanner = { currentScreen = Screen.Scanner })
+                Screen.Pantry -> HomeScreen(
+                    onNavigateToScanner = { currentScreen = Screen.Scanner },
+                    viewModel = viewModel
+                )
                 Screen.Generator -> GeneratorScreen()
-                Screen.Scanner -> BarcodeScreen()
+                Screen.Scanner -> BarcodeScreen(
+                    onItemScanned = { name, barcode ->
+                        viewModel.addIngredient(
+                            Ingredient(
+                                name = name,
+                                quantity = "1 unit",
+                                storageLocation = StorageLocation.PANTRY,
+                                expirationDateMillis = System.currentTimeMillis() + (86400000L * 7),
+                                barcode = barcode
+                            )
+                        )
+                    }
+                )
                 Screen.Liked -> LikedScreen()
                 Screen.Nutrition -> NutritionScreen()
                 Screen.Settings -> AllergiesScreen()

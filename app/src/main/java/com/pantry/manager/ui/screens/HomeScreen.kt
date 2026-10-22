@@ -1,6 +1,5 @@
 package com.pantry.manager.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,27 +17,38 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pantry.manager.data.model.Ingredient
 import com.pantry.manager.data.model.StorageLocation
+import com.pantry.manager.ui.theme.PantryInventoryManagerTheme
+import com.pantry.manager.ui.viewmodel.HomeScreenViewModel
+
+@Composable
+fun HomeScreen(
+    onNavigateToScanner: () -> Unit,
+    viewModel: HomeScreenViewModel = viewModel()
+) {
+    val ingredients by viewModel.ingredients.collectAsState()
+
+    HomeScreenContent(
+        ingredients = ingredients,
+        onNavigateToScanner = onNavigateToScanner,
+        onAddIngredient = { viewModel.addIngredient(it) },
+        onRemoveIngredient = { viewModel.deleteIngredient(it) }
+    )
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(
-    onNavigateToScanner: () -> Unit
+fun HomeScreenContent(
+    ingredients: List<Ingredient>,
+    onNavigateToScanner: () -> Unit,
+    onAddIngredient: (Ingredient) -> Unit,
+    onRemoveIngredient: (Ingredient) -> Unit
 ) {
     var selectedLocationFilter by remember { mutableStateOf<StorageLocation?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
-
-    var ingredients by remember {
-        mutableStateOf(
-            listOf(
-                Ingredient(1, "Whole Milk", "1 Gallon", StorageLocation.FRIDGE, System.currentTimeMillis() + 86400000L * 2, "12345678", 150, 8f, 12f, 8f),
-                Ingredient(2, "Chicken Breast", "2 lbs", StorageLocation.FREEZER, System.currentTimeMillis() + 86400000L * 14, "87654321", 165, 31f, 0f, 3.6f),
-                Ingredient(3, "Fresh Spinach", "1 Bag", StorageLocation.FRIDGE, System.currentTimeMillis() + 86400000L * 1, "11223344", 23, 2.9f, 3.6f, 0.4f),
-                Ingredient(4, "Canned Tomatoes", "3 Cans", StorageLocation.PANTRY, System.currentTimeMillis() + 86400000L * 180, "44332211", 50, 1f, 10f, 0f)
-            )
-        )
-    }
 
     val filteredIngredients = ingredients.filter {
         selectedLocationFilter == null || it.storageLocation == selectedLocationFilter
@@ -122,7 +132,7 @@ fun HomeScreen(
                     items(filteredIngredients, key = { it.id }) { item ->
                         IngredientCard(
                             ingredient = item,
-                            onRemove = { ingredients = ingredients.filter { it.id != item.id } }
+                            onRemove = { onRemoveIngredient(item) }
                         )
                     }
                 }
@@ -134,7 +144,7 @@ fun HomeScreen(
         ManualAddIngredientDialog(
             onDismiss = { showAddDialog = false },
             onAdd = { newItem ->
-                ingredients = ingredients + newItem
+                onAddIngredient(newItem)
                 showAddDialog = false
             }
         )
@@ -246,3 +256,22 @@ fun ManualAddIngredientDialog(
         }
     )
 }
+
+@Preview(showBackground = true)
+@Composable
+fun HomeScreenPreview() {
+    PantryInventoryManagerTheme {
+        HomeScreenContent(
+            ingredients = listOf(
+                Ingredient(1, "Whole Milk", "1 Gallon", StorageLocation.FRIDGE, System.currentTimeMillis() + 86400000L * 2, "12345678", 150, 8f, 12f, 8f),
+                Ingredient(2, "Chicken Breast", "2 lbs", StorageLocation.FREEZER, System.currentTimeMillis() + 86400000L * 14, "87654321", 165, 31f, 0f, 3.6f),
+                Ingredient(3, "Fresh Spinach", "1 Bag", StorageLocation.FRIDGE, System.currentTimeMillis() + 86400000L * 1, "11223344", 23, 2.9f, 3.6f, 0.4f),
+                Ingredient(4, "Canned Tomatoes", "3 Cans", StorageLocation.PANTRY, System.currentTimeMillis() + 86400000L * 180, "44332211", 50, 1f, 10f, 0f)
+            ),
+            onNavigateToScanner = {},
+            onAddIngredient = {},
+            onRemoveIngredient = {}
+        )
+    }
+}
+
