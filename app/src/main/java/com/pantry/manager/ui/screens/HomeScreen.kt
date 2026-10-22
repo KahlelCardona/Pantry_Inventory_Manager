@@ -1,11 +1,14 @@
 package com.pantry.manager.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Warning
@@ -15,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
@@ -23,6 +27,9 @@ import com.pantry.manager.data.model.Ingredient
 import com.pantry.manager.data.model.StorageLocation
 import com.pantry.manager.ui.theme.PantryInventoryManagerTheme
 import com.pantry.manager.ui.viewmodel.HomeScreenViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun HomeScreen(
@@ -194,6 +201,7 @@ fun IngredientCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ManualAddIngredientDialog(
     onDismiss: () -> Unit,
@@ -202,6 +210,17 @@ fun ManualAddIngredientDialog(
     var name by remember { mutableStateOf("") }
     var quantity by remember { mutableStateOf("") }
     var location by remember { mutableStateOf(StorageLocation.PANTRY) }
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = System.currentTimeMillis() + (86400000L * 7)
+    )
+
+    val selectedDateMillis = datePickerState.selectedDateMillis ?: (System.currentTimeMillis() + (86400000L * 7))
+    val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
+    val formattedDate = dateFormatter.format(Date(selectedDateMillis))
+
+    val daysLeft = ((selectedDateMillis - System.currentTimeMillis()) / (1000 * 60 * 60 * 24)).toInt().coerceAtLeast(0)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -219,6 +238,20 @@ fun ManualAddIngredientDialog(
                     onValueChange = { quantity = it },
                     label = { Text("Quantity (e.g. 1 dozen)") },
                     modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = "$formattedDate ($daysLeft days remaining)",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Expiration Date") },
+                    trailingIcon = {
+                        IconButton(onClick = { showDatePicker = true }) {
+                            Icon(Icons.Default.DateRange, contentDescription = "Select Expiration Date")
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showDatePicker = true }
                 )
                 Text("Storage Location:", fontWeight = FontWeight.SemiBold)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -238,11 +271,11 @@ fun ManualAddIngredientDialog(
                     if (name.isNotBlank()) {
                         onAdd(
                             Ingredient(
-                                id = System.currentTimeMillis(),
+                                id = 0L,
                                 name = name,
                                 quantity = if (quantity.isBlank()) "1 unit" else quantity,
                                 storageLocation = location,
-                                expirationDateMillis = System.currentTimeMillis() + (86400000L * 7)
+                                expirationDateMillis = selectedDateMillis
                             )
                         )
                     }
@@ -255,6 +288,24 @@ fun ManualAddIngredientDialog(
             TextButton(onClick = onDismiss) { Text("Cancel") }
         }
     )
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
 }
 
 @Preview(showBackground = true)
