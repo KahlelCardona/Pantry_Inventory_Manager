@@ -30,6 +30,7 @@ import com.pantry.manager.ui.viewmodel.HomeScreenViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.ceil
 
 @Composable
 fun HomeScreen(
@@ -86,7 +87,7 @@ fun HomeScreenContent(
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            val expiringCount = ingredients.count { (it.expirationDateMillis - System.currentTimeMillis()) < (86400000L * 3) }
+            val expiringCount = ingredients.count { ceil((it.expirationDateMillis - System.currentTimeMillis()) / 86400000.0).toInt() <= 3 }
             if (expiringCount > 0) {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
@@ -163,7 +164,7 @@ fun IngredientCard(
     ingredient: Ingredient,
     onRemove: () -> Unit
 ) {
-    val daysLeft = ((ingredient.expirationDateMillis - System.currentTimeMillis()) / (1000 * 60 * 60 * 24)).toInt()
+    val daysLeft = ceil((ingredient.expirationDateMillis - System.currentTimeMillis()) / (86400000.0)).toInt()
     val isExpiring = daysLeft <= 3
 
     Card(
@@ -217,10 +218,9 @@ fun ManualAddIngredientDialog(
     )
 
     val selectedDateMillis = datePickerState.selectedDateMillis ?: (System.currentTimeMillis() + (86400000L * 7))
-    val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
-    val formattedDate = dateFormatter.format(Date(selectedDateMillis))
+    val formattedDate = java.time.Instant.ofEpochMilli(selectedDateMillis).atZone(java.time.ZoneOffset.UTC).format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy", java.util.Locale.getDefault()))
 
-    val daysLeft = ((selectedDateMillis - System.currentTimeMillis()) / (1000 * 60 * 60 * 24)).toInt().coerceAtLeast(0)
+    val daysLeft = ceil((selectedDateMillis - System.currentTimeMillis() - java.util.TimeZone.getDefault().getOffset(selectedDateMillis)) / (86400000.0)).toInt().coerceAtLeast(0)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -275,7 +275,7 @@ fun ManualAddIngredientDialog(
                                 name = name,
                                 quantity = if (quantity.isBlank()) "1 unit" else quantity,
                                 storageLocation = location,
-                                expirationDateMillis = selectedDateMillis
+                                expirationDateMillis = selectedDateMillis - java.util.TimeZone.getDefault().getOffset(selectedDateMillis)
                             )
                         )
                     }
